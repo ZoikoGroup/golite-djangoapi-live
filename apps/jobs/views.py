@@ -6,7 +6,8 @@ from .serializers import JobSerializer
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+
+@permission_classes([])
 def job_list_api(request):
     jobs = Job.objects.filter(status=True).order_by('-posted_at')
     serializer = JobSerializer(jobs, many=True)
