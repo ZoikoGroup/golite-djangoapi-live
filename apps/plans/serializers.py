@@ -31,6 +31,7 @@ class PlanSerializer(serializers.ModelSerializer):
 
             "price",
             "sale_price",
+            "price_24",
             "final_price",
             "duration_days",
             "sim_type",

@@ -66,6 +66,14 @@ class Plan(models.Model):
         blank=True,
         null=True
     )
+
+    price_24 = models.DecimalField(
+    max_digits=8,
+    decimal_places=2,
+    blank=True,
+    null=True
+)
+
     duration_days = models.PositiveIntegerField()
     sim_type = models.CharField(max_length=10, choices=SIM_TYPE_CHOICES)
 
