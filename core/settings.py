@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'apps.orders',
     'apps.contact',
     'apps.newsletter',
+    'apps.jobs',
     'django_ckeditor_5',
     'rest_framework',
     'rest_framework.authtoken',
