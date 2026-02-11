@@ -23,8 +23,10 @@ urlpatterns = [
     path("api/v2/order/", include("apps.orders.urls")),
 
     path("api/v1/", include("apps.coupons.api_urls")),
+    path('api/contact/', include('apps.contact.urls')),
+    path('api/newsletter/', include('apps.newsletter.urls')),
+    path('jobs/', include('apps.jobs.urls')),
 
-    
     #path('api/v1/', include('apps.coupons.urls')),
 ]
 
