@@ -48,6 +48,7 @@ class PlanAdmin(admin.ModelAdmin):
                     "fields": (
                         "price",
                         "sale_price",
+                        "price_24",
                         "duration_days",
                         "sim_type",
                     )
