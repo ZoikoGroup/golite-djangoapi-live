@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'apps.senior_discount',
     'apps.orders',
     'apps.contact',
+    'apps.newsletter',
     'django_ckeditor_5',
     'rest_framework',
     'rest_framework.authtoken',
