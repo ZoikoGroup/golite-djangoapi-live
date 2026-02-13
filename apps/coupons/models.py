@@ -40,6 +40,11 @@ class Coupon(models.Model):
         help_text="Leave empty = valid for all users"
     )
 
+    per_user_limit = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Max uses per user. Leave empty = unlimited per user"
+    )
+
     discount = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
 
     type = models.CharField(
