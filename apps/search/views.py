@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from django.db.models import Q
 from django.utils.text import slugify
 
+
+# correct model imports
 from apps.plans.models import Plan
 from apps.products.models import Product
 from apps.blog.models import BlogPost
@@ -14,7 +16,7 @@ from apps.jobs.models import Job
 @permission_classes([AllowAny])
 def global_search(request):
 
-    key = request.GET.get("key", "").strip()
+    key = request.GET.get("key")
 
     if not key:
         return Response({
@@ -27,15 +29,12 @@ def global_search(request):
 
 
     # ========================
-    # PLANS SEARCH
+    # PLAN SEARCH
     # ========================
 
     plans = Plan.objects.filter(
-        Q(name__icontains=key) |
-        Q(description__icontains=key) |
-        Q(category__name__icontains=key)
-    ).select_related("category")[:10]
-
+        Q(name__icontains=key)
+    )[:10]
 
     for plan in plans:
 
@@ -47,23 +46,20 @@ def global_search(request):
 
             "slug": plan.slug,
 
-            "category": plan.category.name if plan.category else None,
+            "category": plan.category.name if hasattr(plan, "category") and plan.category else None,
 
-            "category_slug": plan.category.slug if plan.category else None,
+            "category_slug": plan.category.slug if hasattr(plan, "category") and plan.category else None,
 
         })
 
 
     # ========================
-    # PRODUCTS SEARCH
+    # PRODUCT SEARCH
     # ========================
 
     products = Product.objects.filter(
-        Q(name__icontains=key) |
-        Q(description__icontains=key) |
-        Q(category__name__icontains=key)
-    ).select_related("category")[:10]
-
+        Q(name__icontains=key)
+    )[:10]
 
     for product in products:
 
@@ -75,9 +71,9 @@ def global_search(request):
 
             "slug": product.slug,
 
-            "category": product.category.name if product.category else None,
+            "category": product.category.name if hasattr(product, "category") and product.category else None,
 
-            "category_slug": product.category.slug if product.category else None,
+            "category_slug": product.category.slug if hasattr(product, "category") and product.category else None,
 
         })
 
@@ -87,10 +83,8 @@ def global_search(request):
     # ========================
 
     blogs = BlogPost.objects.filter(
-        Q(title__icontains=key) |
-        Q(content__icontains=key)
+        Q(title__icontains=key)
     )[:10]
-
 
     for blog in blogs:
 
@@ -114,11 +108,8 @@ def global_search(request):
     # ========================
 
     jobs = Job.objects.filter(
-        Q(title__icontains=key) |
-        Q(description__icontains=key) |
-        Q(location__icontains=key)
+        Q(title__icontains=key)
     )[:10]
-
 
     for job in jobs:
 
@@ -128,7 +119,6 @@ def global_search(request):
 
             "title": job.title,
 
-            # generate slug dynamically
             "slug": slugify(job.title),
 
             "category": None,
