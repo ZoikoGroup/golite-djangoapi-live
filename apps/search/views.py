@@ -74,6 +74,7 @@ def global_search(request):
             "category": product.category.name if hasattr(product, "category") and product.category else None,
 
             "category_slug": product.category.slug if hasattr(product, "category") and product.category else None,
+            
 
         })
 
