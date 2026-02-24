@@ -1,95 +1,102 @@
 from django.contrib import admin
 from django import forms
-import json
-
+from django.utils.html import format_html
 from .models import (
     Product,
-    ProductVariant,
+    ProductAttribute,
     ProductImage,
-    ProductCategory
+    ProductCategory,
+    ProductVariant,
+    ProductVariantImage,
 )
 
-# ---------------------------
-# Variant Inline Form
-# ---------------------------
-class ProductVariantInlineForm(forms.ModelForm):
+
+# ---------------- ATTRIBUTE INLINE ----------------
+class ProductAttributeInlineForm(forms.ModelForm):
     class Meta:
-        model = ProductVariant
-        fields = ['attributes', 'price', 'stock']
-        widgets = {
-            'attributes': forms.Textarea(attrs={'rows': 3, 'cols': 40}),
-        }
-        help_texts = {
-            'attributes': 'Enter attributes as JSON'
-        }
-
-    def clean_attributes(self):
-        data = self.cleaned_data.get('attributes')
-        if isinstance(data, str):
-            try:
-                return json.loads(data)
-            except json.JSONDecodeError:
-                raise forms.ValidationError("Invalid JSON format")
-        return data
+        model = ProductAttribute
+        fields = ["storage", "colour", "condition"]
 
 
-# ---------------------------
-# Inlines
-# ---------------------------
-class ProductVariantInline(admin.TabularInline):
-    model = ProductVariant
-    form = ProductVariantInlineForm
-    extra = 1
+class ProductAttributeInline(admin.TabularInline):
+    model = ProductAttribute
+    form = ProductAttributeInlineForm
+    extra = 0
+    max_num = 1
 
 
+# ---------------- PRODUCT IMAGE INLINE ----------------
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 1
 
 
-# ---------------------------
-# Category Admin
-# ---------------------------
+# ---------------- VARIANT IMAGE INLINE ----------------
+class ProductVariantImageInline(admin.TabularInline):
+    model = ProductVariantImage
+    extra = 1
+
+
+# ---------------- VARIANT INLINE INSIDE PRODUCT ----------------
+class ProductVariantInline(admin.StackedInline):
+    model = ProductVariant
+    extra = 0
+    show_change_link = True
+    readonly_fields = ("variant_id",)
+
+    fields = (
+        "variant_id",
+        "storage",
+        "colour",
+        "condition",
+        "regular_price",
+        "sale_price",
+        "stock_status",
+        "quantity",
+    )
+
+    def variant_id(self, obj):
+        if obj.pk:
+            return format_html("<strong># {}</strong>", obj.pk)
+        return "-"
+
+    variant_id.short_description = "Variant ID"
+
+
+# ---------------- CATEGORY ADMIN ----------------
 @admin.register(ProductCategory)
 class ProductCategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'is_active', 'created_at')
-    search_fields = ('name',)
-    list_filter = ('is_active',)
-    prepopulated_fields = {'slug': ('name',)}
+    list_display = ["name", "is_active", "created_at"]
+    search_fields = ["name"]
+    list_filter = ["is_active"]
+    prepopulated_fields = {"slug": ("name",)}
 
 
-# ---------------------------
-# Product Admin
-# ---------------------------
+# ---------------- PRODUCT ADMIN ----------------
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'get_categories', 'price', 'created_at')
-    search_fields = ('name', 'categories__name')
-    list_filter = ('categories',)
-    filter_horizontal = ('categories',)   # ✅ Multi-select UI
-    inlines = [ProductVariantInline, ProductImageInline]
-    prepopulated_fields = {'slug': ('name',)}
+    fieldsets = (("General", {"fields": ("category", "name", "description", "slug")}),)
 
-    def get_categories(self, obj):
-        return ", ".join([c.name for c in obj.categories.all()])
-
-    get_categories.short_description = "Categories"
+    inlines = [
+        ProductImageInline,
+        ProductAttributeInline,
+        ProductVariantInline,
+    ]
 
 
-# ---------------------------
-# Variant Admin
-# ---------------------------
+# ---------------- VARIANT ADMIN ----------------
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
-    list_display = ('product', 'attributes', 'price', 'stock')
-    search_fields = ('product__name',)
-    list_filter = ('product',)
+    list_display = ["product", "storage", "colour", "condition"]
+    search_fields = ["product__name"]
+    list_filter = ["product"]
+
+    # THIS enables multiple images per variant
+    inlines = [ProductVariantImageInline]
 
 
-# ---------------------------
-# Image Admin
-# ---------------------------
+# ---------------- PRODUCT IMAGE ADMIN ----------------
 @admin.register(ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
-    list_display = ('product', 'image', 'is_main')
-    list_filter = ('is_main',)
+    list_display = ["product", "image", "is_main"]
+    list_filter = ["is_main"]

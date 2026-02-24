@@ -27,6 +27,8 @@ urlpatterns = [
     path('api/newsletter/', include('apps.newsletter.urls')),
     path('jobs/', include('apps.jobs.urls')),
 
+    path('search/', include('apps.search.urls')),
+
     #path('api/v1/', include('apps.coupons.urls')),
 ]
 
