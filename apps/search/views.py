@@ -1,40 +1,71 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+
 from django.db.models import Q
 from django.utils.text import slugify
 
 
-# correct model imports
+# MODELS
 from apps.plans.models import Plan
 from apps.products.models import Product
 from apps.blog.models import BlogPost
 from apps.jobs.models import Job
 
 
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def global_search(request):
+    """
+    Global Search API
 
-    key = request.GET.get("key")
+    Endpoint:
+    /api/search?key=iphone 15
+
+    Searches in:
+    - Plans
+    - Products
+    - Blogs
+    - Jobs
+    """
+
+    key = request.GET.get("key", "").strip()
 
     if not key:
         return Response({
             "status": False,
             "message": "Search key required",
+            "count": 0,
             "data": []
         })
+
+
+    keywords = key.split()
 
     results = []
 
 
-    # ========================
-    # PLAN SEARCH
-    # ========================
 
-    plans = Plan.objects.filter(
-        Q(name__icontains=key)
-    )[:10]
+    # ====================================================
+    # PLAN SEARCH
+    # ====================================================
+
+    plan_query = Q()
+
+    for word in keywords:
+
+        plan_query |= Q(name__icontains=word)
+        plan_query |= Q(slug__icontains=word)
+
+        # optional if exists
+        if hasattr(Plan, "description"):
+            plan_query |= Q(description__icontains=word)
+
+
+    plans = Plan.objects.filter(plan_query).select_related("category").distinct()[:10]
+
 
     for plan in plans:
 
@@ -46,20 +77,32 @@ def global_search(request):
 
             "slug": plan.slug,
 
-            "category": plan.category.name if hasattr(plan, "category") and plan.category else None,
+            "category": plan.category.name if plan.category else None,
 
-            "category_slug": plan.category.slug if hasattr(plan, "category") and plan.category else None,
+            "category_slug": plan.category.slug if plan.category else None,
 
         })
 
 
-    # ========================
-    # PRODUCT SEARCH
-    # ========================
 
-    products = Product.objects.filter(
-        Q(name__icontains=key)
-    )[:10]
+
+    # ====================================================
+    # PRODUCT SEARCH
+    # ====================================================
+
+    product_query = Q()
+
+    for word in keywords:
+
+        product_query |= Q(name__icontains=word)
+        product_query |= Q(slug__icontains=word)
+
+        if hasattr(Product, "description"):
+            product_query |= Q(description__icontains=word)
+
+
+    products = Product.objects.filter(product_query).select_related("category").distinct()[:10]
+
 
     for product in products:
 
@@ -71,21 +114,32 @@ def global_search(request):
 
             "slug": product.slug,
 
-            "category": product.category.name if hasattr(product, "category") and product.category else None,
+            "category": product.category.name if product.category else None,
 
-            "category_slug": product.category.slug if hasattr(product, "category") and product.category else None,
-            
+            "category_slug": product.category.slug if product.category else None,
 
         })
 
 
-    # ========================
-    # BLOG SEARCH
-    # ========================
 
-    blogs = BlogPost.objects.filter(
-        Q(title__icontains=key)
-    )[:10]
+
+    # ====================================================
+    # BLOG SEARCH
+    # ====================================================
+
+    blog_query = Q()
+
+    for word in keywords:
+
+        blog_query |= Q(title__icontains=word)
+        blog_query |= Q(slug__icontains=word)
+
+        if hasattr(BlogPost, "content"):
+            blog_query |= Q(content__icontains=word)
+
+
+    blogs = BlogPost.objects.filter(blog_query).distinct()[:10]
+
 
     for blog in blogs:
 
@@ -104,13 +158,24 @@ def global_search(request):
         })
 
 
-    # ========================
-    # JOB SEARCH
-    # ========================
 
-    jobs = Job.objects.filter(
-        Q(title__icontains=key)
-    )[:10]
+
+    # ====================================================
+    # JOB SEARCH
+    # ====================================================
+
+    job_query = Q()
+
+    for word in keywords:
+
+        job_query |= Q(title__icontains=word)
+
+        if hasattr(Job, "description"):
+            job_query |= Q(description__icontains=word)
+
+
+    jobs = Job.objects.filter(job_query).distinct()[:10]
+
 
     for job in jobs:
 
@@ -129,9 +194,14 @@ def global_search(request):
         })
 
 
+
+
+
     return Response({
 
         "status": True,
+
+        "message": "Search result",
 
         "count": len(results),
 
