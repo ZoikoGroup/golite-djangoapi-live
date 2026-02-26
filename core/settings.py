@@ -209,8 +209,6 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
-
-    # ✅ ADD THIS
     "x-frontend-origin",
 ]
 
