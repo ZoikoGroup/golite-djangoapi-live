@@ -246,3 +246,25 @@ DEFAULT_FROM_EMAIL = "Zoiko Group <info@zoikogroup.com>"
 
 
 # settings.py cors
+JAZZMIN_SETTINGS = {
+    "custom_css": "css/jazzmin.css",
+    "site_title": "Golite",
+    "site_header": "Admin 1",
+    "site_logo_classes": "siteLogo",
+    "site_brand": "  Admin 1",
+    "welcome_sign": "Welcome to GoLite Admin 1",
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "topmenu_links": [
+        {"name": "Home", "url": "/", "permissions": ["auth.view_user"]},
+    ],
+    # Icons must use "app_label.model_name" format (lowercase)
+    "icons": {
+        "plans.plantype": "fas fa-layer-group",
+        "plans.plan": "fas fa-list",         # Plan model.
+        "coupons.coupon": "fa-sharp fa-solid fa-ticket",         # Plan model
+        "auth.user": "fas fa-user",          # Users
+        "auth.group": "fas fa-users",        # Groups
+    }
+    
+}
