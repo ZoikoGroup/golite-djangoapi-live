@@ -249,10 +249,10 @@ DEFAULT_FROM_EMAIL = "Zoiko Group <info@zoikogroup.com>"
 JAZZMIN_SETTINGS = {
     "custom_css": "css/jazzmin.css",
     "site_title": "Golite",
-    "site_header": "Admin 1",
+    "site_header": "Admin 2",
     "site_logo_classes": "siteLogo",
-    "site_brand": "  Admin 1",
-    "welcome_sign": "Welcome to GoLite Admin 1",
+    "site_brand": "  Admin 2",
+    "welcome_sign": "Welcome to GoLite Admin",
     "show_sidebar": True,
     "navigation_expanded": True,
     "topmenu_links": [
