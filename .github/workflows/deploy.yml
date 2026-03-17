@@ -20,7 +20,9 @@ jobs:
           script: |
             git config --global --add safe.directory /var/www/html/goliteapi
             cd /var/www/html/goliteapi
+            git stash
             git pull origin main
+            git stash drop
             source venv/bin/activate
             pip install -r requirements.txt
             python manage.py migrate --noinput
