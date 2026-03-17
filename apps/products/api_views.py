@@ -8,48 +8,26 @@ from .filters import ProductFilter
 
 
 # -----------------------------
-# Product List API (With Filters)
+# Product List
 # -----------------------------
 class ProductListAPIView(generics.ListAPIView):
     queryset = (
         Product.objects
         .select_related('category')
-        .prefetch_related(
-            'attributes',
-            'images',
-            'variants',
-            'variants__images'
-        )
-        .distinct()
+        .prefetch_related('variants', 'images')
         .all()
     )
     serializer_class = ProductSerializer
 
-    filter_backends = [
-        DjangoFilterBackend,
-        filters.SearchFilter,
-        filters.OrderingFilter,
-    ]
-
-    filterset_class = ProductFilter
-    search_fields = ['name', 'description']
-    ordering_fields = ['created_at', 'variants__regular_price']
-    ordering = ['-created_at']
-
 
 # -----------------------------
-# Product Detail API
+# Product Detail
 # -----------------------------
 class ProductDetailAPIView(generics.RetrieveAPIView):
     queryset = (
         Product.objects
         .select_related('category')
-        .prefetch_related(
-            'attributes',
-            'images',
-            'variants',
-            'variants__images'
-        )
+        .prefetch_related('attributes', 'images','variants')
         .all()
     )
     serializer_class = ProductSerializer
@@ -57,7 +35,7 @@ class ProductDetailAPIView(generics.RetrieveAPIView):
 
 
 # -----------------------------
-# Category List API
+# Category List
 # -----------------------------
 class CategoryListAPIView(generics.ListAPIView):
     queryset = ProductCategory.objects.filter(is_active=True)
@@ -65,19 +43,15 @@ class CategoryListAPIView(generics.ListAPIView):
 
 
 # -----------------------------
-# Optional ViewSet Version
+# Product Filter API
+# -----------------------------
+# Product ViewSet (Optional)
 # -----------------------------
 class ProductViewSet(ReadOnlyModelViewSet):
     queryset = (
         Product.objects
         .select_related('category')
-        .prefetch_related(
-            'attributes',
-            'images',
-            'variants',
-            'variants__images'
-        )
-        .distinct()
+        .prefetch_related('variants', 'images')
         .all()
     )
     serializer_class = ProductSerializer
@@ -87,8 +61,7 @@ class ProductViewSet(ReadOnlyModelViewSet):
         filters.SearchFilter,
         filters.OrderingFilter,
     ]
-
     filterset_class = ProductFilter
-    search_fields = ['name', 'description']
-    ordering_fields = ['created_at', 'variants__regular_price']
+    search_fields = ['name']
+    # ordering_fields = ['price', 'created_at']
     ordering = ['-created_at']

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from django.utils.html import format_html
+from itertools import product as cartesian_product
 from .models import (
     Product,
     ProductAttribute,
@@ -11,13 +11,34 @@ from .models import (
 )
 
 
-# ---------------- ATTRIBUTE INLINE ----------------
+# ---------------- ATTRIBUTE INLINE FORM (WITH PLACEHOLDERS) ----------------
 class ProductAttributeInlineForm(forms.ModelForm):
     class Meta:
         model = ProductAttribute
         fields = ["storage", "colour", "condition"]
+        widgets = {
+            "storage": forms.TextInput(
+                attrs={
+                    "placeholder": "Ex: 128gb,256gb,512gb",
+                    "style": "width: 250px;"
+                }
+            ),
+            "colour": forms.TextInput(
+                attrs={
+                    "placeholder": "Ex: black,white",
+                    "style": "width: 250px;"
+                }
+            ),
+            "condition": forms.TextInput(
+                attrs={
+                    "placeholder": "Ex: B1 stock,C1 stock",
+                    "style": "width: 250px;"
+                }
+            ),
+        }
 
 
+# ---------------- ATTRIBUTE INLINE ----------------
 class ProductAttributeInline(admin.TabularInline):
     model = ProductAttribute
     form = ProductAttributeInlineForm
@@ -31,36 +52,12 @@ class ProductImageInline(admin.TabularInline):
     extra = 1
 
 
-# ---------------- VARIANT IMAGE INLINE ----------------
-class ProductVariantImageInline(admin.TabularInline):
-    model = ProductVariantImage
-    extra = 1
-
-
-# ---------------- VARIANT INLINE INSIDE PRODUCT ----------------
+# ---------------- VARIANT INLINE ----------------
 class ProductVariantInline(admin.StackedInline):
     model = ProductVariant
     extra = 0
+    can_delete = True
     show_change_link = True
-    readonly_fields = ("variant_id",)
-
-    fields = (
-        "variant_id",
-        "storage",
-        "colour",
-        "condition",
-        "regular_price",
-        "sale_price",
-        "stock_status",
-        "quantity",
-    )
-
-    def variant_id(self, obj):
-        if obj.pk:
-            return format_html("<strong># {}</strong>", obj.pk)
-        return "-"
-
-    variant_id.short_description = "Variant ID"
 
 
 # ---------------- CATEGORY ADMIN ----------------
@@ -75,13 +72,50 @@ class ProductCategoryAdmin(admin.ModelAdmin):
 # ---------------- PRODUCT ADMIN ----------------
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    fieldsets = (("General", {"fields": ("category", "name", "description", "slug")}),)
-
     inlines = [
         ProductImageInline,
         ProductAttributeInline,
         ProductVariantInline,
     ]
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+
+        product = form.instance
+        attribute = product.attributes.first()
+
+        if not attribute:
+            return
+
+        # Clean and split values
+        storages = list(set([s.strip() for s in attribute.storage.split(",") if s.strip()]))
+        colours = list(set([c.strip() for c in attribute.colour.split(",") if c.strip()]))
+        conditions = list(set([c.strip() for c in attribute.condition.split(",") if c.strip()]))
+
+        if not storages or not colours or not conditions:
+            return
+
+        combinations = list(cartesian_product(storages, colours, conditions))
+
+        for storage, colour, condition in combinations:
+            ProductVariant.objects.get_or_create(
+                product=product,
+                storage=storage,
+                colour=colour,
+                condition=condition,
+                defaults={
+                    "regular_price": 0,
+                    "sale_price": 0,
+                    "stock_status": "in_stock",
+                    "quantity": 0,
+                }
+            )
+
+
+# ---------------- VARIANT IMAGE INLINE ----------------
+class ProductVariantImageInline(admin.TabularInline):
+    model = ProductVariantImage
+    extra = 1
 
 
 # ---------------- VARIANT ADMIN ----------------
@@ -90,8 +124,6 @@ class ProductVariantAdmin(admin.ModelAdmin):
     list_display = ["product", "storage", "colour", "condition"]
     search_fields = ["product__name"]
     list_filter = ["product"]
-
-    # THIS enables multiple images per variant
     inlines = [ProductVariantImageInline]
 
 
