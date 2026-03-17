@@ -10,9 +10,21 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 
+load_dotenv()  # reads .env from project root
+SECRET_KEY = os.environ['SECRET_KEY']
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+# Then use normally:
+VCARE_VENDOR_ID = os.environ['VCARE_VENDOR_ID']
+VCARE_USERNAME  = os.environ['VCARE_USERNAME']
+VCARE_PASSWORD  = os.environ['VCARE_PASSWORD']
+VCARE_PIN       = os.environ['VCARE_PIN']
+
+SECRET_KEY = os.environ['SECRET_KEY']
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 # BASE_DIR points to the root of your Django project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -78,17 +90,18 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'django_filters',
+    'apps.esim_checker',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', 
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -209,7 +222,10 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
+
+    # ✅ ADD THIS
     "x-frontend-origin",
+    "x-secret-key",
 ]
 
 
@@ -246,11 +262,12 @@ DEFAULT_FROM_EMAIL = "Zoiko Group <info@zoikogroup.com>"
 # settings.py cors
 JAZZMIN_SETTINGS = {
     "custom_css": "css/jazzmin.css",
-    "site_title": "Golite",
-    "site_header": "Admin",
+    "site_title": "Golite 1",
+    "site_header": "Admin 1",
+    "site_logo": "img/logo.png",
     "site_logo_classes": "siteLogo",
-    "site_brand": "  Admin",
-    "welcome_sign": "Welcome to GoLite Admin",
+    "site_brand": "  Admin 1",
+    "welcome_sign": "Welcome to GoLite Admin 1",
     "show_sidebar": True,
     "navigation_expanded": True,
     "topmenu_links": [

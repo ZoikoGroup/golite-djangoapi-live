@@ -30,6 +30,7 @@ urlpatterns = [
     path('search/', include('apps.search.urls')),
 
     #path('api/v1/', include('apps.coupons.urls')),
+    path('api/', include('apps.esim_checker.urls')),
 ]
 
 if settings.DEBUG:
