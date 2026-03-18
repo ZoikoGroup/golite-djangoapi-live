@@ -207,6 +207,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://lakhan-golite.vercel.app",
     "https://golitemobile.com",
     "https://www.golitemobile.com",
+    "http://localhost:3000",
+    "https://zoikomobile.com",
 ]
 
 #CORS_ALLOW_ALL_ORIGINS = True  # safe for now (you can restrict later)
