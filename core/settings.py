@@ -209,6 +209,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://www.golitemobile.com",
     "http://localhost:3000",
     "https://zoikomobile.com",
+    "https://driverxmobile.com",
+    "https://zoikoorbit.com",
 ]
 
 #CORS_ALLOW_ALL_ORIGINS = True  # safe for now (you can restrict later)

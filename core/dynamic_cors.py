@@ -11,6 +11,8 @@ STATIC_ORIGINS = [
     "https://www.golitemobile.com",
     "http://localhost:3000",
     "https://zoikomobile.com",
+    "https://driverxmobile.com",
+    "https://zoikoorbit.com",
 ]
 
 @receiver(check_request_enabled)
