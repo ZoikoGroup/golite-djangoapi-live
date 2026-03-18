@@ -9,6 +9,8 @@ STATIC_ORIGINS = [
     "https://lakhan-golite.vercel.app",
     "https://golitemobile.com",
     "https://www.golitemobile.com",
+    "http://localhost:3000",
+    "https://zoikomobile.com",
 ]
 
 @receiver(check_request_enabled)
