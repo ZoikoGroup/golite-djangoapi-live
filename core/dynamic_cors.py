@@ -2,8 +2,7 @@ from corsheaders.signals import check_request_enabled
 from django.dispatch import receiver
 
 STATIC_ORIGINS = [
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
+    "http://localhost:3000",
     "https://golitereact.vercel.app",
     "https://react.golitemobile.com",
     "https://lakhan-golite.vercel.app",

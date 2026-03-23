@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     'apps.senior_discount',
     'apps.orders',
     'apps.contact',
+    "apps.business_contact",
     'apps.newsletter',
     'apps.jobs',
     'apps.search',
