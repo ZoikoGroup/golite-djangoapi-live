@@ -4,30 +4,41 @@ from .models import (
     ProductAttribute,
     ProductImage,
     ProductCategory,
-    ProductVariant
+    ProductVariant,
 )
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'is_main']
+        fields = ["id", "image", "is_main"]
 
 
 class ProductAttributeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductAttribute
-        fields = ['id', 'colour', 'condition', 'storage']
+        fields = ["id", "colour", "condition", "storage"]
+
 
 class ProductVariantsSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
-        fields = ['id']
+        fields = [
+            "id",
+            "storage",
+            "colour",
+            "condition",
+            "regular_price",
+            "sale_price",
+            "stock_status",
+            "quantity",
+        ]
+
 
 class ProductCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductCategory
-        fields = ['id', 'name', 'slug']
+        fields = ["id", "name", "slug"]
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -39,14 +50,14 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id',
-            'name',
-            'description',
-            'slug',
-            'category',
-            'attributes',
-            'images',
-            'variants',
-            'created_at',
-            'updated_at'
+            "id",
+            "name",
+            "description",
+            "slug",
+            "category",
+            "attributes",
+            "images",
+            "variants",
+            "created_at",
+            "updated_at",
         ]
