@@ -32,6 +32,7 @@ urlpatterns = [
 
     #path('api/v1/', include('apps.coupons.urls')),
     path('api/', include('apps.esim_checker.urls')),
+    path('api/', include('apps.accessibility.urls')),
 ]
 
 if settings.DEBUG:
