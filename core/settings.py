@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     'apps.esim_checker',
+    'apps.accessibility',
 ]
 
 MIDDLEWARE = [
