@@ -17,9 +17,15 @@ class AccessibilityIssue(models.Model):
     page_affected = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField()
 
-    email_sent = models.BooleanField(default=False)  # ✅ ADD THIS
+    # ✅ NEW FIELD
+    email_sent = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.full_name} - {self.issue_type}"
+
+    # ✅ THIS CONTROLS ADMIN NAME
+    class Meta:
+        verbose_name = "Accessibility"
+        verbose_name_plural = "Accessibility"
