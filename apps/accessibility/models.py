@@ -16,6 +16,9 @@ class AccessibilityIssue(models.Model):
     issue_type = models.CharField(max_length=100, choices=ISSUE_TYPES)
     page_affected = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField()
+
+    email_sent = models.BooleanField(default=False)  # ✅ ADD THIS
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
