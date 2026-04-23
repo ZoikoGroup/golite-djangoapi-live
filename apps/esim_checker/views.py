@@ -9,6 +9,15 @@ Every request must carry the registered secret key either:
 
 The Origin / Referer header is cross-checked against the registered site_url
 for the supplied secret key, providing a second layer of validation.
+
+Cache flow
+----------
+1. IMEI received
+2. Check esim_checker_log (ESIMCheckerLog) table:
+   - HIT  → increment hit_count, return cached response immediately (no VCare call)
+   - MISS → call VCare API
+3. VCare returns success → insert new ESIMCheckerLog row (hit_count=1)
+4. Return response to caller
 """
 import logging
 
@@ -17,10 +26,13 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
-from .models import ESIMCheckerEndpoint
+from .models import ESIMCheckerEndpoint, ESIMCheckerLog
 from .vcare_service import check_device_esim_compatibility
 
 logger = logging.getLogger(__name__)
+
+# VCare inventory endpoint URL (used as the stored `url` value in the log)
+VCARE_INVENTORY_URL = "https://www.vcareapi.com:8080/inventory"
 
 
 def _extract_origin(request) -> str:
@@ -28,7 +40,6 @@ def _extract_origin(request) -> str:
     origin = request.META.get("HTTP_ORIGIN", "")
     if not origin:
         referer = request.META.get("HTTP_REFERER", "")
-        # Strip path — keep scheme + host only
         if referer:
             from urllib.parse import urlparse
             p = urlparse(referer)
@@ -38,6 +49,36 @@ def _extract_origin(request) -> str:
 
 def _normalise_url(url: str) -> str:
     return url.rstrip("/")
+
+
+def _build_response_payload(imei: str, result: dict) -> dict:
+    """Build the standard response dict from a raw VCare result payload."""
+    device_status = (
+        result.get("data", {})
+        .get("RESULT", {})
+        .get("responseDetails", {})
+        .get("inquireDeviceStatusResponse", {})
+        .get("deviceStatusDetails", {})
+    )
+    manufacturer = device_status.get("manufacturer", {})
+    att_compatibility = device_status.get("attCompatibility", "RED")
+
+    return {
+        "success": True,
+        "imei": imei,
+        "esimCompatible": att_compatibility == "GREEN",
+        "compatible": att_compatibility == "GREEN",
+        "device": manufacturer.get("model"),
+        "manufacturer": manufacturer.get("make"),
+        "lteCompatible": device_status.get("umtsCapableIndicator") == "true",
+        "blacklisted": device_status.get("blacklistedIndicator") == "Y",
+        "deviceCategory": device_status.get("deviceCategory"),
+        "message": (
+            "Device is compatible."
+            if att_compatibility == "GREEN"
+            else "Device is not compatible with our network."
+        ),
+    }
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -113,11 +154,28 @@ class DeviceCompatibilityCheckerView(View):
         if not imei:
             return JsonResponse({"error": "Missing 'imei' field."}, status=400)
 
+        imei = str(imei).strip()
+
         # ------------------------------------------------------------------ #
-        # 6. Call VCare API
+        # 6. Cache check — look up ESIMCheckerLog table first
         # ------------------------------------------------------------------ #
         try:
-            result = check_device_esim_compatibility(str(imei))
+            cached = ESIMCheckerLog.objects.get(imei=imei)
+            # Cache HIT: increment counter and return stored response
+            cached.increment_hit_count()
+            logger.info("Cache HIT for IMEI %s (hit_count now %s)", imei, cached.hit_count + 1)
+            endpoint.increment_hits()
+            return JsonResponse(_build_response_payload(imei, cached.cached_response))
+
+        except ESIMCheckerLog.DoesNotExist:
+            # Cache MISS: fall through to VCare API call
+            logger.info("Cache MISS for IMEI %s — calling VCare API", imei)
+
+        # ------------------------------------------------------------------ #
+        # 7. Call VCare API (only on cache miss)
+        # ------------------------------------------------------------------ #
+        try:
+            result = check_device_esim_compatibility(imei)
         except RuntimeError as exc:
             logger.error("VCare API error for IMEI %s: %s", imei, exc)
             return JsonResponse(
@@ -126,11 +184,9 @@ class DeviceCompatibilityCheckerView(View):
             )
 
         # ------------------------------------------------------------------ #
-        # 7. Record hit and return result
+        # 8. On success, persist to ESIMCheckerLog cache table
         # ------------------------------------------------------------------ #
-        endpoint.increment_hits()
-
-        # Parse nested VCare response
+        # Determine success: VCare response must contain deviceStatusDetails
         device_status = (
             result.get("data", {})
             .get("RESULT", {})
@@ -138,21 +194,27 @@ class DeviceCompatibilityCheckerView(View):
             .get("inquireDeviceStatusResponse", {})
             .get("deviceStatusDetails", {})
         )
-        manufacturer = device_status.get("manufacturer", {})
-        att_compatibility = device_status.get("attCompatibility", "RED")
 
-        return JsonResponse({
-            "success": True,
-            "imei": imei,
-            "esimCompatible": att_compatibility == "GREEN",
-            "compatible": att_compatibility == "GREEN",
-            "device": manufacturer.get("model"),
-            "manufacturer": manufacturer.get("make"),
-            "lteCompatible": device_status.get("umtsCapableIndicator") == "true",
-            "blacklisted": device_status.get("blacklistedIndicator") == "Y",
-            "deviceCategory": device_status.get("deviceCategory"),
-            "message": "Device is compatible." if att_compatibility == "GREEN" else "Device is not compatible with our network.",
-        })
+        if device_status:
+            try:
+                ESIMCheckerLog.objects.create(
+                    imei=imei,
+                    url=VCARE_INVENTORY_URL,
+                    # created_date uses model default (timezone.now) automatically
+                    hit_count=1,
+                    cached_response=result,
+                )
+                logger.info("Cached VCare response for IMEI %s", imei)
+            except Exception as exc:
+                # Non-fatal: log the error but still return the result
+                logger.error("Failed to cache IMEI %s in ESIMCheckerLog: %s", imei, exc)
+
+        # ------------------------------------------------------------------ #
+        # 9. Record endpoint hit and return result
+        # ------------------------------------------------------------------ #
+        endpoint.increment_hits()
+
+        return JsonResponse(_build_response_payload(imei, result))
 
     def options(self, request, *args, **kwargs):
         """Handle CORS preflight."""
@@ -164,7 +226,6 @@ class DeviceCompatibilityCheckerView(View):
 def _add_cors_headers(response, request):
     origin = request.META.get("HTTP_ORIGIN", "")
     if origin:
-        # Only echo back origins that are registered + active
         if ESIMCheckerEndpoint.objects.filter(
             site_url__icontains=origin.replace("https://", "").replace("http://", ""),
             is_active=True,
