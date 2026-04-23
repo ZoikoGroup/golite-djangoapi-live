@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
-from .models import ESIMCheckerEndpoint
+from .models import ESIMCheckerEndpoint, ESIMCheckerLog
 
 
 @admin.register(ESIMCheckerEndpoint)
@@ -129,3 +129,64 @@ class ESIMCheckerEndpointAdmin(admin.ModelAdmin):
         if obj:  # editing existing record
             base.append('site_url')  # URL is immutable once registered
         return base
+
+
+@admin.register(ESIMCheckerLog)
+class ESIMCheckerLogAdmin(admin.ModelAdmin):
+    # ------------------------------------------------------------------ #
+    # List view
+    # ------------------------------------------------------------------ #
+    list_display = (
+        'imei',
+        'hit_count',
+        'created_date',
+        'url',
+    )
+    search_fields = ('imei',)
+    readonly_fields = (
+        'imei',
+        'url',
+        'created_date',
+        'hit_count',
+        'cached_response_pretty',
+    )
+    ordering = ('-created_date',)
+    actions = ['reset_hit_counts', 'delete_selected']
+
+    # ------------------------------------------------------------------ #
+    # Detail form
+    # ------------------------------------------------------------------ #
+    fieldsets = (
+        ('IMEI Info', {
+            'fields': ('imei', 'url', 'created_date', 'hit_count'),
+        }),
+        ('Cached VCare Response', {
+            'fields': ('cached_response_pretty',),
+            'classes': ('collapse',),
+        }),
+    )
+
+    # ------------------------------------------------------------------ #
+    # Custom columns
+    # ------------------------------------------------------------------ #
+    @admin.display(description='Cached Response (JSON)')
+    def cached_response_pretty(self, obj):
+        import json
+        formatted = json.dumps(obj.cached_response, indent=2)
+        return format_html(
+            '<pre style="font-size:0.85em;max-height:400px;overflow:auto;'
+            'background:#f8f8f8;padding:10px;border-radius:4px">{}</pre>',
+            formatted,
+        )
+
+    # ------------------------------------------------------------------ #
+    # Bulk actions
+    # ------------------------------------------------------------------ #
+    @admin.action(description='🔄 Reset hit count for selected logs')
+    def reset_hit_counts(self, request, queryset):
+        updated = queryset.update(hit_count=0)
+        self.message_user(request, f"Hit counts reset for {updated} log(s).", messages.SUCCESS)
+
+    # Prevent adding logs manually from admin
+    def has_add_permission(self, request):
+        return False
