@@ -10,22 +10,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Write SSH key to file (avoids multiline parsing issues)
+      - name: Prepare SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      # Optional debug (remove later)
+      - name: Debug key lines
+        run: |
+          wc -l key.pem
+
+      # Step 2: SSH and deploy
       - name: Deploy to GCP Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key_path: key.pem
           port: ${{ secrets.SSH_PORT }}
+          timeout: 60s
+          command_timeout: 20m
           script: |
-            git config --global --add safe.directory /var/www/html/goliteapi
+            set -e
+
+            echo "Connected to server"
+
             cd /var/www/html/goliteapi
-            git stash
+
+            git config --global --add safe.directory /var/www/html/goliteapi
+
+            git stash || true
             git pull origin main
-            git stash drop
+            git stash drop || true
+
             source venv/bin/activate
             pip install -r requirements.txt
+
             python manage.py migrate --noinput
             python manage.py collectstatic --noinput
+
             sudo systemctl restart gunicorn
             sudo systemctl restart nginx
