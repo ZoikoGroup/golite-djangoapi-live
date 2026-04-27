@@ -29,29 +29,22 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key_path: /github/workspace/key.pem
+          key: ${{ secrets.SSH_PRIVATE_KEY }}    # ← ONLY this, no key_path
           port: ${{ secrets.SSH_PORT }}
           timeout: 60s
           command_timeout: 20m
           debug: true
           script: |
             set -e
-
             echo "Connected to server"
-
             cd /var/www/html/goliteapi
-
             git config --global --add safe.directory /var/www/html/goliteapi
-
             git stash || true
             git pull origin main
             git stash drop || true
-
             source venv/bin/activate
             pip install -r requirements.txt
-
             python manage.py migrate --noinput
             python manage.py collectstatic --noinput
-
             sudo systemctl restart gunicorn
             sudo systemctl restart nginx
