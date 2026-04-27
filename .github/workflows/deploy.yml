@@ -19,10 +19,9 @@ jobs:
       # Step 2: Debug key (VERY IMPORTANT for you)
       - name: Debug SSH key
         run: |
-          echo "LINES:"
-          wc -l key.pem
-          echo "FIRST LINE:"
-          head -n 1 key.pem
+            echo "${{ secrets.SSH_PRIVATE_KEY }}" | wc -l
+            echo "${{ secrets.SSH_PRIVATE_KEY }}" | head -n 1
+            echo "${{ secrets.SSH_PRIVATE_KEY }}" | tail -n 1
 
       # Step 3: Deploy using key_path (not key)
       - name: Deploy to GCP Server
