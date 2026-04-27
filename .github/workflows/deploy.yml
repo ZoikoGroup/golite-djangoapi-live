@@ -10,31 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Debug SSH key
-        run: |
-          echo "Key length in chars:"
-          echo -n "${{ secrets.SSH_PRIVATE_KEY }}" | wc -c
-          echo "Key line count:"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | wc -l
-          echo "First line:"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | head -n 1
-          echo "Last line:"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tail -n 1
-
-      - name: Test raw SSH (bypass appleboy)
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keygen -y -f ~/.ssh/id_ed25519 || echo "KEY IS INVALID/CORRUPT"
-          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
-          ssh -i ~/.ssh/id_ed25519 \
-              -p ${{ secrets.SSH_PORT }} \
-              -o StrictHostKeyChecking=no \
-              -o BatchMode=yes \
-              -v \
-              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-              "echo SUCCESS" 2>&1 | tail -30
+      - name: Deploy to GCP Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            git config --global --add safe.directory /var/www/html/goliteapi
+            cd /var/www/html/goliteapi
+            git stash
+            git pull origin main
+            git stash drop
+            source venv/bin/activate
+            pip install -r requirements.txt
+            python manage.py migrate --noinput
+            python manage.py collectstatic --noinput
+            sudo systemctl restart gunicorn
+            sudo systemctl restart nginx

@@ -10,14 +10,20 @@ Every request must carry the registered secret key either:
 The Origin / Referer header is cross-checked against the registered site_url
 for the supplied secret key, providing a second layer of validation.
 
-Cache flow
-----------
-1. IMEI received
-2. Check esim_checker_log (ESIMCheckerLog) table:
-   - HIT  → increment hit_count, return cached response immediately (no VCare call)
-   - MISS → call VCare API
-3. VCare returns success → insert new ESIMCheckerLog row (hit_count=1)
-4. Return response to caller
+Supported actions
+-----------------
+esim_check / esim_checker
+    1. Check ESIMCheckerLog cache for the IMEI.
+       HIT  → increment hit_count, return cached response (no VCare call).
+       MISS → call VCare API.
+    2. If VCare responds and attCompatibility == "GREEN" (eSIM compatible)
+       → insert a new ESIMCheckerLog row (hit_count=1).
+    3. Return response to caller.
+    Note: non-compatible IMEIs are NOT persisted to the log.
+
+esim_update
+    Increment hit_count on an existing ESIMCheckerLog entry and return the
+    cached response.  Returns 404 if the IMEI has not been logged yet.
 """
 import logging
 
@@ -145,9 +151,10 @@ class DeviceCompatibilityCheckerView(View):
         # ------------------------------------------------------------------ #
         # 5. Validate action + IMEI
         # ------------------------------------------------------------------ #
-        if action != "esim_checker":
+        SUPPORTED_ACTIONS = ("esim_check", "esim_update", "esim_checker")
+        if action not in SUPPORTED_ACTIONS:
             return JsonResponse(
-                {"error": f"Unknown action '{action}'. Supported: esim_checker"},
+                {"error": f"Unknown action '{action}'. Supported: {', '.join(SUPPORTED_ACTIONS)}"},
                 status=400,
             )
 
@@ -157,23 +164,37 @@ class DeviceCompatibilityCheckerView(View):
         imei = str(imei).strip()
 
         # ------------------------------------------------------------------ #
-        # 6. Cache check — look up ESIMCheckerLog table first
+        # 6. Handle esim_update — just increment hit on an existing log entry
         # ------------------------------------------------------------------ #
+        if action == "esim_update":
+            try:
+                cached = ESIMCheckerLog.objects.get(imei=imei)
+                cached.increment_hit_count()
+                logger.info("esim_update: incremented hit_count for IMEI %s", imei)
+                endpoint.increment_hits()
+                return JsonResponse(_build_response_payload(imei, cached.cached_response))
+            except ESIMCheckerLog.DoesNotExist:
+                logger.warning("esim_update: no cached record found for IMEI %s", imei)
+                return JsonResponse(
+                    {"error": "No cached record found for this IMEI. Run esim_check first."},
+                    status=404,
+                )
+
+        # ------------------------------------------------------------------ #
+        # 7. Handle esim_check / esim_checker — cache-aside lookup
+        # ------------------------------------------------------------------ #
+
+        # 7a. Cache check — return immediately if already logged
         try:
             cached = ESIMCheckerLog.objects.get(imei=imei)
-            # Cache HIT: increment counter and return stored response
             cached.increment_hit_count()
             logger.info("Cache HIT for IMEI %s (hit_count now %s)", imei, cached.hit_count + 1)
             endpoint.increment_hits()
             return JsonResponse(_build_response_payload(imei, cached.cached_response))
-
         except ESIMCheckerLog.DoesNotExist:
-            # Cache MISS: fall through to VCare API call
             logger.info("Cache MISS for IMEI %s — calling VCare API", imei)
 
-        # ------------------------------------------------------------------ #
-        # 7. Call VCare API (only on cache miss)
-        # ------------------------------------------------------------------ #
+        # 7b. Cache MISS → call VCare
         try:
             result = check_device_esim_compatibility(imei)
         except RuntimeError as exc:
@@ -184,9 +205,8 @@ class DeviceCompatibilityCheckerView(View):
             )
 
         # ------------------------------------------------------------------ #
-        # 8. On success, persist to ESIMCheckerLog cache table
+        # 8. Persist to ESIMCheckerLog only when device is eSIM-compatible
         # ------------------------------------------------------------------ #
-        # Determine success: VCare response must contain deviceStatusDetails
         device_status = (
             result.get("data", {})
             .get("RESULT", {})
@@ -195,19 +215,32 @@ class DeviceCompatibilityCheckerView(View):
             .get("deviceStatusDetails", {})
         )
 
-        if device_status:
+        is_esim_compatible = (
+            device_status.get("attCompatibility") == "GREEN"
+            if device_status
+            else False
+        )
+
+        if is_esim_compatible:
             try:
                 ESIMCheckerLog.objects.create(
                     imei=imei,
                     url=VCARE_INVENTORY_URL,
-                    # created_date uses model default (timezone.now) automatically
                     hit_count=1,
                     cached_response=result,
                 )
-                logger.info("Cached VCare response for IMEI %s", imei)
+                logger.info(
+                    "IMEI %s is eSIM-compatible — inserted into ESIMCheckerLog", imei
+                )
             except Exception as exc:
-                # Non-fatal: log the error but still return the result
-                logger.error("Failed to cache IMEI %s in ESIMCheckerLog: %s", imei, exc)
+                # Non-fatal: log but still return the result to the caller
+                logger.error(
+                    "Failed to insert IMEI %s into ESIMCheckerLog: %s", imei, exc
+                )
+        else:
+            logger.info(
+                "IMEI %s is NOT eSIM-compatible — skipping ESIMCheckerLog insert", imei
+            )
 
         # ------------------------------------------------------------------ #
         # 9. Record endpoint hit and return result
