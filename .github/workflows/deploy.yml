@@ -30,4 +30,11 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keygen -y -f ~/.ssh/id_ed25519 || echo "KEY IS INVALID/CORRUPT"
-          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ s
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/id_ed25519 \
+              -p ${{ secrets.SSH_PORT }} \
+              -o StrictHostKeyChecking=no \
+              -o BatchMode=yes \
+              -v \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "echo SUCCESS" 2>&1 | tail -30
