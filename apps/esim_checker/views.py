@@ -138,15 +138,24 @@ class DeviceCompatibilityCheckerView(View):
         calling_origin = _extract_origin(request)
         registered_origin = _normalise_url(endpoint.site_url)
 
-        if calling_origin and calling_origin != registered_origin:
-            logger.warning(
-                "Origin mismatch for key %s: expected %s, got %s",
-                secret_key, registered_origin, calling_origin,
-            )
-            return JsonResponse(
-                {"error": "Origin not allowed."},
-                status=403,
-            )
+        if calling_origin:
+            # Normalise both to bare hostname so that
+            # https://golitemobile.com matches https://www.golitemobile.com
+            # and trailing paths/ports don't cause false rejections.
+            def _bare_host(url: str) -> str:
+                from urllib.parse import urlparse
+                host = urlparse(url).hostname or url
+                return host.lower().removeprefix("www.")
+
+            if _bare_host(calling_origin) != _bare_host(registered_origin):
+                logger.warning(
+                    "Origin mismatch for key %s: expected %s, got %s",
+                    secret_key, registered_origin, calling_origin,
+                )
+                return JsonResponse(
+                    {"error": "Origin not allowed."},
+                    status=403,
+                )
 
         # ------------------------------------------------------------------ #
         # 5. Validate action + IMEI
