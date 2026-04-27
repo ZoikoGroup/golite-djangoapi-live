@@ -10,24 +10,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Write SSH key to file (avoids multiline parsing issues)
+      # Step 1: Write SSH key properly (preserve formatting)
       - name: Prepare SSH key
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+          printf "%s\n" "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
           chmod 600 key.pem
 
-      # Optional debug (remove later)
-      - name: Debug key lines
+      # Step 2: Debug key (VERY IMPORTANT for you)
+      - name: Debug SSH key
         run: |
+          echo "LINES:"
           wc -l key.pem
+          echo "FIRST LINE:"
+          head -n 1 key.pem
 
-      # Step 2: SSH and deploy
+      # Step 3: Deploy using key_path (not key)
       - name: Deploy to GCP Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key_path: /github/workspace/key.pem
           port: ${{ secrets.SSH_PORT }}
           timeout: 60s
           command_timeout: 20m
