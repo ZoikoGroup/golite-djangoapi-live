@@ -251,16 +251,27 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # EMAIL / SMTP CONFIGURATION
 # ===============================
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+#EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_HOST = "smtpout.secureserver.net"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+#EMAIL_HOST = "smtpout.secureserver.net"
+#EMAIL_PORT = 587
+#EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = "info@zoikogroup.com"
-EMAIL_HOST_PASSWORD = "NoxxMC26070%!LGM"
+#EMAIL_HOST_USER = "info@zoikogroup.com"
+#EMAIL_HOST_PASSWORD = "NoxxMC26070%!LGM"
 
-DEFAULT_FROM_EMAIL = "Zoiko Group <info@zoikogroup.com>"
+#DEFAULT_FROM_EMAIL = "Zoiko Group <info@zoikogroup.com>"
+
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtpout.secureserver.net'
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
+EMAIL_HOST_USER = 'info@golitemobile.com'
+EMAIL_HOST_PASSWORD = 'NoxxMC26070%!LGM'
+DEFAULT_FROM_EMAIL = 'info@golitemobile.com'
 
 
 
