@@ -177,17 +177,40 @@ class DeviceCompatibilityCheckerView(View):
         # ------------------------------------------------------------------ #
         if action == "esim_update":
             try:
-                cached = ESIMCheckerLog.objects.get(imei=imei)
-                cached.increment_hit_count()
-                logger.info("esim_update: incremented hit_count for IMEI %s", imei)
+                # Try to get existing record
+                obj = ESIMCheckerLog.objects.get(imei=imei)
+
+                # If found → increment hit
+                obj.increment_hit_count()
+                logger.info("Updated IMEI %s (hit_count incremented)", imei)
+
                 endpoint.increment_hits()
-                return JsonResponse(_build_response_payload(imei, cached.cached_response))
+                return JsonResponse(_build_response_payload(imei, obj.cached_response))
+
             except ESIMCheckerLog.DoesNotExist:
-                logger.warning("esim_update: no cached record found for IMEI %s", imei)
-                return JsonResponse(
-                    {"error": "No cached record found for this IMEI. Run esim_check first."},
-                    status=404,
+                logger.info("IMEI %s not found, creating new record", imei)
+
+                # 🔥 Call API to get data
+                try:
+                    result = check_device_esim_compatibility(imei)
+                except Exception as e:
+                    logger.error("VCare error: %s", str(e))
+                    return JsonResponse(
+                        {"error": "Upstream API error"},
+                        status=502
+                    )
+
+                # 🔥 Create new record
+                ESIMCheckerLog.objects.create(
+                    imei=imei,
+                    url=VCARE_INVENTORY_URL,
+                    hit_count=1,
+                    cached_response=result,
                 )
+
+                endpoint.increment_hits()
+
+                return JsonResponse(_build_response_payload(imei, result))
 
         # ------------------------------------------------------------------ #
         # 7. Handle esim_check / esim_checker — cache-aside lookup
