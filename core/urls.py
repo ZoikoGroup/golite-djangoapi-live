@@ -5,7 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 def home(request):
-    return HttpResponse("Golite Django API is running")
+    return HttpResponse("Golite Django API is running111")
 
 urlpatterns = [
     path('', home),  # 👈 ROOT URL
