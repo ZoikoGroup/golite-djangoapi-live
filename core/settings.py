@@ -203,7 +203,7 @@ REST_FRAMEWORK = {
 
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
-    "http://localhost:5173",
+    "http://localhost:3001",
     "https://golitereact.vercel.app",
     "https://react.golitemobile.com",
     "https://lakhan-golite.vercel.app",
@@ -248,7 +248,7 @@ USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ===============================9999999999999
-# EMAIL / SMTP CONFIGURATION tt
+# EMAIL / SMTP CONFIGURATION
 # ===============================
 
 #EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
