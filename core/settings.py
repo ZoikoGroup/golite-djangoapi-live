@@ -53,6 +53,9 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'goliteapi.golitemobile.com',
     '34.100.195.29',
+    'localhost',
+    '127.0.0.1',
+    'http://127.0.0.1:8000',
 ]
 
 
@@ -199,13 +202,17 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "https://golitereact.vercel.app",
+    "https://react.golitemobile.com",
+    "https://lakhan-golite.vercel.app",
     "https://golitemobile.com",
     "https://www.golitemobile.com",
+    "http://localhost:3000",
     "https://zoikomobile.com",
     "https://driverxmobile.com",
     "https://zoikoorbit.com",
-    "https://react.zoikoorbit.com/",
-    "https://zoikoorbit.com/"
 ]
 
 #CORS_ALLOW_ALL_ORIGINS = True  # safe for now (you can restrict later)
