@@ -187,6 +187,16 @@ CKEDITOR_5_CONFIGS = {
             "code", "codeBlock", "|",
             "sourceEditing"
         ],
+        "htmlSupport": {
+            "allow": [
+                {
+                    "name": "/.*/",      # allow all tags
+                    "attributes": True,
+                    "classes": True,     # ✅ allow class=""
+                    "styles": True
+                }
+            ]
+        }
         
     }
 }
