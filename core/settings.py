@@ -183,7 +183,12 @@ CKEDITOR_5_CONFIGS = {
             'bold', 'italic', 'link',
             'bulletedList', 'numberedList',
             'blockQuote', 'imageUpload',
-            'undo', 'redo'
+            'undo', 'redo',
+            "code", "codeBlock", "|",
+            "sourceEditing"
+        ],
+        "extraPlugins": [
+            "sourceEditing",  # 🔥 required
         ],
     }
 }
