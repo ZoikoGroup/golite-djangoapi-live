@@ -187,9 +187,7 @@ CKEDITOR_5_CONFIGS = {
             "code", "codeBlock", "|",
             "sourceEditing"
         ],
-        "extraPlugins": [
-            "sourceEditing",  # 🔥 required
-        ],
+        
     }
 }
 
