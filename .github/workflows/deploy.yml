@@ -17,13 +17,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          debug: true
           script: |
-            git config --global --add safe.directory /var/www/html/goliteapi
-            cd /var/www/html/goliteapi
-            git stash || true
+            cd /home/lennox/goliteapi
             git pull origin main
-            git stash drop || true
             source venv/bin/activate
             pip install -r requirements.txt
             python manage.py migrate --noinput
