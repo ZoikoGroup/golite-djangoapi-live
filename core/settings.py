@@ -226,6 +226,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://zoikomobile.com",
     "https://driverxmobile.com",
     "https://zoikoorbit.com",
+    "https://react.zoikoorbit.com",
 ]
 
 #CORS_ALLOW_ALL_ORIGINS = True  # safe for now (you can restrict later)
